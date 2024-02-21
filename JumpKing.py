@@ -50,7 +50,7 @@ class NETWORK(torch.nn.Module):
 		)
 
 		self.final = torch.nn.Linear(hidden_dim, output_dim)
-
+                   
 	def forward(self, x: torch.Tensor) -> torch.Tensor:
 		"""Returns a Q_value
         Args:
@@ -439,6 +439,6 @@ def train():
 
 			
 if __name__ == "__main__":
-	#Game = JKGame()
-	#Game.running()
-	train()
+	Game = JKGame()
+	Game.running()
+	#train()
