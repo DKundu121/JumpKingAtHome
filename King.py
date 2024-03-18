@@ -327,10 +327,8 @@ class King():
 				if keys[pygame.K_SPACE]:
 					self.splatCount = 0
 					self.idle_counter = 0
-<<<<<<< HEAD
-=======
 
->>>>>>> 089a49a3a5e93c943eb9b58c4730615f10bcb686
+
 					if self.jumpCount < self.maxJumpCount:
 						self.jumpCount += 1
 
