@@ -361,7 +361,7 @@ class King():
 						else:
 							self._jump("right")
 
-					elif keys[pygame.K_LEFT]:
+					elif keys[pygame.K_LEFT]:						
 						self.splatCount = 0
 						self.idle_counter = 0
 
