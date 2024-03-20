@@ -138,6 +138,8 @@ class King():
 
 		self.x, self.y = 230, 298
 
+		self.maxy = self.y
+
 		self.width, self.height = 32, 32
 
 		self.rect_x, self.rect_y = self.x + 1, self.y + 7
@@ -178,9 +180,9 @@ class King():
 
 		# Particles
 
-		self.jump_particle = King_Particle("images\\particles\\jump_particle.png", 5, 1, 32)
+		self.jump_particle = King_Particle("images/particles/jump_particle.png", 5, 1, 32)
 
-		self.snow_jump_particle = King_Particle("images\\particles\\snow_jump_particle.png", 4, 3, 36)
+		self.snow_jump_particle = King_Particle("images/particles/snow_jump_particle.png", 4, 3, 36)
 
 		self.level_change = 0
 
@@ -328,8 +330,8 @@ class King():
 					self.splatCount = 0
 					self.idle_counter = 0
 
-
 					if self.jumpCount < self.maxJumpCount:
+
 						self.jumpCount += 1
 
 					if not self.isCrouch:
@@ -338,14 +340,16 @@ class King():
 
 					elif self.jumpCount > self.maxJumpCount:
 
-						if keys[pygame.K_RIGHT] and keys[pygame.K_UP]:
+						if keys[pygame.K_RIGHT] and keys[pygame.K_UP] and keys[pygame.K_UP]:
 
 							self._jump("right")
 
-						elif keys[pygame.K_LEFT] and keys[pygame.K_UP]:
+						elif keys[pygame.K_LEFT] and keys[pygame.K_UP] and keys[pygame.K_UP]:
 
 							self._jump("left")
-						elif keys[pygame.K_UP]: 
+
+						elif keys[pygame.K_UP]:
+
 							self._jump("up")
 
 				else:
@@ -405,6 +409,9 @@ class King():
 			self.isLookUp = False
 			self.isDance = False
 			self.danceCount = 0
+
+	def update_max_y(self, newy):
+		self.maxy = newy
 
 	def _collide_right(self, platform):
 

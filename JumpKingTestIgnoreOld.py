@@ -41,7 +41,7 @@ class JKGame:
 		self.clock = pygame.time.Clock()
 
 		self.fps = int(os.environ.get("fps"))
-
+ 
 		self.bg_color = (0, 0, 0)
 
 		self.screen = pygame.display.set_mode((int(os.environ.get("screen_width")) * int(os.environ.get("window_scale")), int(os.environ.get("screen_height")) * int(os.environ.get("window_scale"))), pygame.HWSURFACE|pygame.DOUBLEBUF)#|pygame.SRCALPHA)
@@ -53,7 +53,7 @@ class JKGame:
 		
 		self.game_screen_x = 0
 
-		pygame.display.set_icon(pygame.image.load("images/sheets/JumpKingIcon.ico"))
+		pygame.display.set_icon(pygame.image.load("images\\sheets\\JumpKingIcon.ico"))
 
 		self.levels = Levels(self.game_screen)
 
@@ -69,18 +69,6 @@ class JKGame:
 
 		#self.start = Start(self.game_screen, self.menus)
 
-		self.action_dict = {
-		0: 'right',
-		1: 'left',
-		2: 'right+space',
-		3: 'left+space',
-		#4: 'idle',
-		# 5: 'space',
-		} 
-		self.action_keys = list(self.action_dict.keys())  
-		
-		self.env_started = 0
-
 		self.step_counter = 0
 		self.max_step = max_step
 
@@ -92,7 +80,6 @@ class JKGame:
 		
 		for king in self.kings:
 			king.reset()
-
 		self.levels.reset()
 		os.environ["start"] = "1"
 		os.environ["gaming"] = "1"
@@ -108,7 +95,7 @@ class JKGame:
 			state = [king.levels.current_level, king.x, king.y, king.jumpCount]
 
 			self.visited = {}
-			self.visited[(king.levels.current_level, king.y)] = 1    
+			self.visited[(king.levels.current_level, king.y)] = 1	
 		
 		# self.king.reset()
 		# state = [self.king.levels.current_level, self.king.x, self.king.y, self.king.jumpCount]
@@ -118,10 +105,10 @@ class JKGame:
 
 		return done, state
 
-	def move_available(self,king):
+	def move_available(self, king):
 		available = not king.isFalling \
-		and not king.levels.ending \
-		and (not king.isSplat or king.splatCount > king.splatDuration)
+				and not king.levels.ending \
+				and (not king.isSplat or king.splatCount > king.splatDuration)
 		return available
 
 	def step(self, actions):
@@ -142,32 +129,27 @@ class JKGame:
 			self._update_guistuff()
 			self._update_audio()
 			pygame.display.update()
-			reward = [0] * len(self.kings)
-			for index,king in enumerate(self.kings):
+			for king in self.kings:
 				old_level = king.levels.current_level
 				old_y = king.y
-
-				if king.y < king.maxy:
-					king.update_max_y(king.y)
-					reward[index]+= 0.1
-
 				if self.move_available(king):
 					self.step_counter += 1
+					state = [king.levels.current_level, king.x, king.y, king.jumpCount]
 					##################################################################################################
 					# Define the reward from environment                                                             #
 					##################################################################################################
 					if king.levels.current_level > old_level or (king.levels.current_level == old_level and king.y < old_y):
-						reward[index]+= 1
+						reward = 0
 					else:
 						self.visited[(king.levels.current_level, king.y)] = self.visited.get((king.levels.current_level, king.y), 0) + 1
 						if self.visited[(king.levels.current_level, king.y)] < self.visited[(old_level, old_y)]:
 							self.visited[(king.levels.current_level, king.y)] = self.visited[(old_level, old_y)] + 1
 
-						reward[index]+= -self.visited[(king.levels.current_level, king.y)]* 0.1 
+						reward = -self.visited[(king.levels.current_level, king.y)]
 					####################################################################################################
-			return reward
 
-	
+					done = True if self.step_counter > self.max_step else False
+					return state, reward, done
 
 	def running(self):
 		"""
@@ -245,9 +227,6 @@ class JKGame:
 		if os.environ["active"]:
 
 			for king in self.kings:
-				if king.y < king.maxy:
-					#print("previous best: " + str(king.maxy) + " new best: " + str(king.y))
-					king.maxy = king.y
 				king.blitme()
 
 		if os.environ["gaming"]:
@@ -332,63 +311,110 @@ class JKGame:
 
 			pygame.mixer.Channel(channel).set_volume(float(os.environ.get("volume")))
 
-def get_surrounding_platforms(env, king):
-	zone_of_vision_size = 150  # Adjust as needed
-	surrounding_platforms = []
-	MAX_PLATFORM_LEVELS = 40
-	for platform in env.levels.levels[env.levels.current_level].platforms: 
-		# Calculate relative distances to the king
-		relative_x = platform.x - king.x
-		relative_y = platform.y - king.y 
-		if abs(relative_x) <= zone_of_vision_size and abs(relative_y) <= zone_of_vision_size: 
-			surrounding_platforms.append((relative_x, relative_y))
 
-	# Pad out the surrounding_platforms list with Max_platform_levels - len(surrounding_platforms) values
-	surrounding_platforms += [(-1, -1)] * (MAX_PLATFORM_LEVELS - len(surrounding_platforms))
-	return surrounding_platforms
-	
+def train(n_generations):
+
+    action_dict = {
+        0: 'right',
+        1: 'left',
+        2: 'right+space',
+        3: 'left+space',
+        4: 'idle',
+        # 5: 'space',
+    }
+
+    env = JKGame(max_step=1000, n_kings=50)
+    env.reset()
+    action_keys = list(action_dict.keys())
+
+
+    for generation in range(n_generations):
+        env.reset()
+        yourmother = True
+        yourcounter = 0
+        while yourmother:
+            actions = []
+            for king in env.kings:
+                action = np.random.choice(action_keys)
+                actions.append(action)
+            env.step(actions)
+            yourcounter += 1
+            if yourcounter > 3000:
+                yourmother = False
+
+def train_minimalist():
+    action_dict = {
+        0: 'right',
+        1: 'left',
+        2: 'right+space',
+        3: 'left+space',
+        4: 'idle',
+        # 5: 'space',
+    }
+    env = JKGame(max_step=1000, n_kings=50)
+    env.reset()
+    action_keys = list(action_dict.keys())
+
+    yourmother = True
+    yourcounter = 0
+    while yourmother:
+        actions = []
+        for king in env.kings:
+            action = np.random.choice(action_keys)
+            actions.append(action)
+        env.step(actions)
+        yourcounter += 1
+        if yourcounter > 3000:
+            yourmother = False
 
 def eval_genomes(genomes, config):
 	# Environment Preparation
-	env = JKGame(max_step=1000, n_kings=config.pop_size)
+	action_dict = {
+		0: 'right',
+		1: 'left',
+		2: 'right+space',
+		3: 'left+space',
+		#4: 'idle',
+		# 5: 'space',
+	}        
+
+	env = JKGame(max_step=1000, n_kings=50)
 	env.reset()
+	action_keys = list(action_dict.keys())
 
 	nets = []
+	ge = []
 	for genome_id, genome in genomes:
-		#print(type(genome))
+		print(type(genome))
+		print()
 		genome.fitness = 0  # start with fitness level of 0
 		net = neat.nn.FeedForwardNetwork.create(genome, config)
 		nets.append(net)
+		ge.append(genome)
 
 	# Actually doing some training
+	yourmother = True
+	yourcounter = 0
 	previous_actions = [0] * len(env.kings)
-	n_ticks = 500
-
-	for counter in range(n_ticks):
+	while yourmother:
 		actions = []
 		for index, king in enumerate(env.kings):
-			surrounding_platforms = [item for sublist in get_surrounding_platforms(env, king) for item in sublist]
-			king_state = [king.levels.current_level, king.x, king.y, king.jumpCount, previous_actions[index]]
-			inputs = surrounding_platforms + king_state
-			#print('inputs : '+str(inputs))
+			inputs = (king.levels.current_level, king.x, king.y, king.jumpCount, previous_actions[index])
 			output = nets[env.kings.index(king)].activate(inputs)
 			action = output.index(max(output))
+			print(action)
 			actions.append(action)
 			previous_actions[index] = action
-		#genome[index].fitness += reward
-		reward = env.step(actions)
-
-	for index, genome in enumerate(genomes):
-		#genome[1].fitness = 300-env.kings[index].maxy if genome[1].fitness != 0 else 0
-		genome[1].fitness = 300-env.kings[index].maxy
-		print(genome)
-
-# To do fix stupid while loop into for loop
-# To do, set list of ALL platforms as input, and then correlate with king.levels.current_level and thenpray it fucking work
+		env.step(actions)
+		yourcounter += 1
+		if yourcounter > 200:
+			yourmother = False
 
 
 def run(config_file):
-	config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_file)
+	config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_file)
 	p = neat.Population(config)
 
 	# Add a stdout reporter to show progress in the terminal.
