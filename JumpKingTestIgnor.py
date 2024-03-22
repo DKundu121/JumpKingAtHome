@@ -48,6 +48,8 @@ class JKGame:
 
 		self.game_screen = pygame.Surface((int(os.environ.get("screen_width")), int(os.environ.get("screen_height"))), pygame.HWSURFACE|pygame.DOUBLEBUF)#|pygame.SRCALPHA)
 
+		print("ADD A BREAKPOINT HERE")
+
 		print(type(self.game_screen))
 		print(type(self.screen))
 		
@@ -95,7 +97,7 @@ class JKGame:
 
 		self.levels.reset()
 		os.environ["start"] = "1"
-		os.environ["gaming"] = "1"
+		os.environ["gaming"] = "1" 
 		os.environ["pause"] = ""
 		os.environ["active"] = "1"
 		os.environ["attempt"] = str(int(os.environ.get("attempt")) + 1)
@@ -118,7 +120,7 @@ class JKGame:
 
 		return done, state
 
-	def move_available(self,king):
+	def move_available(self, king):
 		available = not king.isFalling \
 		and not king.levels.ending \
 		and (not king.isSplat or king.splatCount > king.splatDuration)
@@ -127,45 +129,52 @@ class JKGame:
 	def step(self, actions):
 		
 		#old_y = (self.king.levels.max_level - self.king.levels.current_level) * 360 + self.king.y
-		while True:
-			self.clock.tick(self.fps)
-			self._check_events()
-			if not os.environ["pause"]:
+		self.clock.tick(self.fps)
+		self._check_events()
+		if not os.environ["pause"]:
 				
-				for i, king in enumerate(self.kings):
-					if not self.move_available(king):
-						actions[i] = None
+			for i, king in enumerate(self.kings):
+				if not self.move_available(king):
+					actions[i] = None
+			self._update_gamestuff(actions=actions)
+			
+		self._update_gamescreen()
+		self._update_guistuff()
+		self._update_audio()
+		pygame.display.update()
+		reward = [0] * len(self.kings)
 
-				self._update_gamestuff(actions=actions)
+		for index,king in enumerate(self.kings):
+			old_level = king.levels.current_level
+			old_y = king.y
+			if self.move_available(king):
+					
+				# #self.step_counter += 1
+				# ##################################################################################################
+				# # Define the reward from environment                                                             #
+				# ##################################################################################################
+				# if king.levels.current_level > old_level or (king.levels.current_level == old_level and king.y < old_y):
+				# 	reward[index]+= 1
+				# else:
+				# 	self.visited[(king.levels.current_level, king.y)] = self.visited.get((king.levels.current_level, king.y), 0) + 1
+				# 	if self.visited[(king.levels.current_level, king.y)] < self.visited[(old_level, old_y)]:
+				# 		self.visited[(king.levels.current_level, king.y)] = self.visited[(old_level, old_y)] + 1
 
-			self._update_gamescreen()
-			self._update_guistuff()
-			self._update_audio()
-			pygame.display.update()
-			reward = [0] * len(self.kings)
-			for index,king in enumerate(self.kings):
-				old_level = king.levels.current_level
-				old_y = king.y
-
-				if king.y < king.maxy:
+				# 	#king.reward+= -self.visited[(king.levels.current_level, king.y)]* 0.1 
+				# ####################################################################################################
+				if king.maxy < king.y:
 					king.update_max_y(king.y)
-					reward[index]+= 0.1
-
-				if self.move_available(king):
-					self.step_counter += 1
-					##################################################################################################
-					# Define the reward from environment                                                             #
-					##################################################################################################
-					if king.levels.current_level > old_level or (king.levels.current_level == old_level and king.y < old_y):
-						reward[index]+= 1
-					else:
-						self.visited[(king.levels.current_level, king.y)] = self.visited.get((king.levels.current_level, king.y), 0) + 1
-						if self.visited[(king.levels.current_level, king.y)] < self.visited[(old_level, old_y)]:
-							self.visited[(king.levels.current_level, king.y)] = self.visited[(old_level, old_y)] + 1
-
-						reward[index]+= -self.visited[(king.levels.current_level, king.y)]* 0.1 
-					####################################################################################################
-			return reward
+					king.reward+= 0.1
+				if king.levels.current_level == old_level and king.y < old_y:
+					king.reward+=0.5
+				if king.levels.current_level > old_level:
+					king.reward+=1
+				if king.maxy == old_y: #penalize for staying on the same vertical spot i.e not jumping
+					king.reward+= -0.1
+			if king.maxy > king.y:
+				king.update_max_y(king.y)
+				print("Reward: ", 360-king.maxy)
+	
 
 	
 
@@ -243,11 +252,7 @@ class JKGame:
 			self.levels.blit1()
 
 		if os.environ["active"]:
-
 			for king in self.kings:
-				if king.y < king.maxy:
-					#print("previous best: " + str(king.maxy) + " new best: " + str(king.y))
-					king.maxy = king.y
 				king.blitme()
 
 		if os.environ["gaming"]:
@@ -333,58 +338,112 @@ class JKGame:
 			pygame.mixer.Channel(channel).set_volume(float(os.environ.get("volume")))
 
 def get_surrounding_platforms(env, king):
-	zone_of_vision_size = 150  # Adjust as needed
+	zone_of_vision_size = 100  # Adjust as needed
 	surrounding_platforms = []
 	MAX_PLATFORM_LEVELS = 40
 	for platform in env.levels.levels[env.levels.current_level].platforms: 
 		# Calculate relative distances to the king
-		relative_x = platform.x - king.x
-		relative_y = platform.y - king.y 
+		relative_x = (platform.x - king.x)#/472
+		relative_y = (platform.y - king.y)#/344
 		if abs(relative_x) <= zone_of_vision_size and abs(relative_y) <= zone_of_vision_size: 
 			surrounding_platforms.append((relative_x, relative_y))
 
 	# Pad out the surrounding_platforms list with Max_platform_levels - len(surrounding_platforms) values
-	surrounding_platforms += [(-1, -1)] * (MAX_PLATFORM_LEVELS - len(surrounding_platforms))
+	surrounding_platforms += [(-1,-1)] * (MAX_PLATFORM_LEVELS - len(surrounding_platforms))
 	return surrounding_platforms
+
+	
+
+def generate_ml_move(env, king, nets):
+	surrounding_platforms = [item for sublist in get_surrounding_platforms(env, king) for item in sublist]
+	king_state = [king.levels.current_level, king.jumpCount]
+	inputs = surrounding_platforms + king_state
+	output = nets[env.kings.index(king)].activate(inputs)
+	
+	length = int(round(output[4] * 31))
+	number = output.index(max(output[0:4]))
+
+	alist = [number] * length
+	if number == 2:
+		alist.append(0)
+	elif number == 3:
+		alist.append(1)
+	else:
+		alist.append(4)
+	return alist
+
+
+def generate_random_move():
+	length = np.random.randint(1, 30)
+	number = random.randint(0, 3)
+	random_list = [number] * length
+	if number == 2:
+		random_list.append(0)
+	elif number == 3:
+		random_list.append(1)
+	else:
+		random_list.append(4)
+	return random_list
 	
 
 def eval_genomes(genomes, config):
 	# Environment Preparation
-	env = JKGame(max_step=1000, n_kings=config.pop_size)
+	action_dict = {
+		0: 'right',
+		1: 'left',
+		2: 'right+space',
+		3: 'left+space',
+		4: 'idle',
+		#5: 'space',
+	}        
+	
+
+	env = JKGame(max_step=100000, n_kings=len(genomes))
 	env.reset()
 
 	nets = []
+	actions_queue = []
 	for genome_id, genome in genomes:
-		#print(type(genome))
 		genome.fitness = 0  # start with fitness level of 0
 		net = neat.nn.FeedForwardNetwork.create(genome, config)
 		nets.append(net)
+		actions_queue.append([])
+	
+	actions = [0] * len(genomes)
+	
+	kings_move_count = [0] * len(genomes)
 
 	# Actually doing some training
-	previous_actions = [0] * len(env.kings)
-	n_ticks = 500
-
-	for counter in range(n_ticks):
-		actions = []
+	n_moves = 8
+	running = True
+	toquit = False
+	while True:
 		for index, king in enumerate(env.kings):
-			surrounding_platforms = [item for sublist in get_surrounding_platforms(env, king) for item in sublist]
-			king_state = [king.levels.current_level, king.x, king.y, king.jumpCount, previous_actions[index]]
-			inputs = surrounding_platforms + king_state
-			#print('inputs : '+str(inputs))
-			output = nets[env.kings.index(king)].activate(inputs)
-			action = output.index(max(output))
-			actions.append(action)
-			previous_actions[index] = action
-		#genome[index].fitness += reward
-		reward = env.step(actions)
+			if len(actions_queue[index]) > 0:
+				actions[index] = actions_queue[index].pop(0)
 
-	for index, genome in enumerate(genomes):
-		#genome[1].fitness = 300-env.kings[index].maxy if genome[1].fitness != 0 else 0
-		genome[1].fitness = 300-env.kings[index].maxy
-		print(genome)
+			elif len(actions_queue[index]) == 0 and kings_move_count[index] < n_moves:
+				if env.move_available(king):
+					#actions_queue[index] = generate_random_move()
+					actions_queue[index] = generate_ml_move(env, king, nets)
+					actions[index] = actions_queue[index].pop(0)
+					kings_move_count[index] += 1
+				else:
+					actions[index] = 4
+			
+			elif (len(actions_queue[index]) == 0):
+				actions[index] = 4
+				if all(kings_move_count >= n_moves for kings_move_count in kings_move_count) and all(env.move_available(k) for k in env.kings):
+					toquit = True
+		
+		
+		env.step(actions)
+		for index, genome in enumerate(genomes):
+			if genome[1].fitness < (360-env.kings[index].maxy):
+				genome[1].fitness = (360-env.kings[index].maxy)
 
-# To do fix stupid while loop into for loop
-# To do, set list of ALL platforms as input, and then correlate with king.levels.current_level and thenpray it fucking work
+		if toquit:
+			break
 
 
 def run(config_file):
@@ -395,8 +454,12 @@ def run(config_file):
 	p.add_reporter(neat.StdOutReporter(True))
 	stats = neat.StatisticsReporter()
 	p.add_reporter(stats)
+
 	
-	winner = p.run(eval_genomes, 50)
+	winner = p.run(eval_genomes, 100)
+
+	print('\nBest genome:\n{!s}'.format(winner))
+	print('\nTraining completed. Reason: {!s}'.format(p.stop_reason))
 
 if __name__ == "__main__":
 	#Game = JKGame()
