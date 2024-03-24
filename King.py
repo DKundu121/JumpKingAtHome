@@ -84,6 +84,8 @@ class King():
 
 		self.isWalk = False
 
+		self.moves_left = 0
+
 		self.isCrouch = False
 
 		self.isFalling = False
@@ -126,6 +128,8 @@ class King():
 
 		self.isLanded = False
 
+		self.current_platform = 2
+
 		# Stats
 
 		self.time = 0
@@ -134,13 +138,18 @@ class King():
 
 		self.falls = 0
 
-		self.reward = 0
+		self.explored = False
+
+		self.reward = float(0)
 
 		# Animation
 
 		self.x, self.y = 230, 298
-
+        
+		self.oldy = self.y
+        
 		self.maxy = self.y
+
 
 		self.width, self.height = 32, 32
 
@@ -203,6 +212,8 @@ class King():
 		self.elasticity, self.angle_elasticity = 0.925, 0.5
 
 		self.charge_time = 0
+
+		self.visited_platforms = [2]
 
 	@property
 	def rect(self):
@@ -465,6 +476,20 @@ class King():
 			return True
 		else:
 			return False
+		
+	def new_platform(self) -> None:
+
+		if self.current_platform not in self.visited_platforms:
+			self.explored = True
+			
+
+		
+	
+	def acheck_visited(plat_) -> None:
+
+		return
+
+	
 
 	def _collide_bottom(self, platform):
 
@@ -531,7 +556,7 @@ class King():
 		self.slip = 0
 		self.slope = 0
 
-		for platform in self.levels.levels[self.levels.current_level].platforms:
+		for plat_id, platform in enumerate(self.levels.levels[self.levels.current_level].platforms):
 
 			if not platform.slope:
 
@@ -553,15 +578,26 @@ class King():
 					self.rect_y = platform.rect.bottom
 					self.lastCollision = platform
 					self.collideTop = True
+					
+
 
 				elif self._collide_bottom(platform):
+                    
+					self.current_platform = plat_id
+					self.new_platform()
+					if plat_id not in self.visited_platforms:
+						
+						self.visited_platforms.append(plat_id)
+						#self.reward += 0.5
 
+					
 					self.slip = platform.slip 
 					self.rect_y = platform.rect.top - self.rect_height
 					self.isFalling = False
 					self.collided = False
-					self.isContact = False
+					self.isContact = False 
 					self.collideBottom = True
+					
 
 					if not self.lastCollision:
 						self.isLanded = True

@@ -162,18 +162,42 @@ class JKGame:
 
 				# 	#king.reward+= -self.visited[(king.levels.current_level, king.y)]* 0.1 
 				# ####################################################################################################
-				if king.maxy < king.y:
+				#if king.maxy < king.y:
+					#king.update_max_y(king.y)
+					#king.reward+= 0.1
+				#if king.levels.current_level == old_level and king.y < old_y:
+					#king.reward+=0.5
+				#if king.levels.current_level > old_level:
+					#king.reward+=1
+				#if king.maxy == king.y: #penalize for staying on the same vertical spot i.e not jumping
+					#king.reward -= 0.1
+					#pass
+				if king.stayed == True:
+					king.reward -= 0.1
+					king.stayed == False
+				if king.explored == True: #If the king has explored(gone to a new platform)
+						king.reward += 0.5
+						king.explored == False
+
+				if king.maxy > king.y and self.move_available(king):
+
+  
 					king.update_max_y(king.y)
-					king.reward+= 0.1
-				if king.levels.current_level == old_level and king.y < old_y:
-					king.reward+=0.5
-				if king.levels.current_level > old_level:
-					king.reward+=1
-				if king.maxy == old_y: #penalize for staying on the same vertical spot i.e not jumping
-					king.reward+= -0.1
-			if king.maxy > king.y:
-				king.update_max_y(king.y)
-				print("Reward: ", 360-king.maxy)
+					king.reward += 1.0
+
+					
+
+					print("King ID - ", str(index) )
+					print("Reward: ", king.reward)
+					print("Platforms Visited: " + str(king.visited_platforms))
+					print("-------------------------------------------------")
+
+
+				
+				#create a function to be called when checking for a new platform explored.
+
+				
+			
 	
 
 	
@@ -338,13 +362,14 @@ class JKGame:
 			pygame.mixer.Channel(channel).set_volume(float(os.environ.get("volume")))
 
 def get_surrounding_platforms(env, king):
-	zone_of_vision_size = 100  # Adjust as needed
+	zone_of_vision_size = 250  # Adjust as needed
 	surrounding_platforms = []
 	MAX_PLATFORM_LEVELS = 40
 	for platform in env.levels.levels[env.levels.current_level].platforms: 
 		# Calculate relative distances to the king
 		relative_x = (platform.x - king.x)#/472
 		relative_y = (platform.y - king.y)#/344
+
 		if abs(relative_x) <= zone_of_vision_size and abs(relative_y) <= zone_of_vision_size: 
 			surrounding_platforms.append((relative_x, relative_y))
 
@@ -352,7 +377,28 @@ def get_surrounding_platforms(env, king):
 	surrounding_platforms += [(-1,-1)] * (MAX_PLATFORM_LEVELS - len(surrounding_platforms))
 	return surrounding_platforms
 
-	
+#def get_current_platform(env,king):
+
+	#for plat_id, platform in enumerate(env.levels.levels[env.levels.current_level].platforms):
+		 
+		#if platform.y - king.y == 0:
+
+
+			#return plat_id
+		
+
+
+def add_to_visited(king,plat_id):
+
+	for plat in len(king.visited_platforms):
+		if plat_id == plat:
+			return False
+		else:
+			king.visited_platforms.append(plat_id)
+			return True
+
+
+
 
 def generate_ml_move(env, king, nets):
 	surrounding_platforms = [item for sublist in get_surrounding_platforms(env, king) for item in sublist]
@@ -409,12 +455,16 @@ def eval_genomes(genomes, config):
 		nets.append(net)
 		actions_queue.append([])
 	
+
 	actions = [0] * len(genomes)
 	
 	kings_move_count = [0] * len(genomes)
 
 	# Actually doing some training
-	n_moves = 8
+	n_moves = 5
+	for king in env.kings:
+		king.moves_left = n_moves
+
 	running = True
 	toquit = False
 	while True:
@@ -424,7 +474,7 @@ def eval_genomes(genomes, config):
 
 			elif len(actions_queue[index]) == 0 and kings_move_count[index] < n_moves:
 				if env.move_available(king):
-					#actions_queue[index] = generate_random_move()
+   	#actions_queue[index] = generate_random_move()
 					actions_queue[index] = generate_ml_move(env, king, nets)
 					actions[index] = actions_queue[index].pop(0)
 					kings_move_count[index] += 1
@@ -434,16 +484,24 @@ def eval_genomes(genomes, config):
 			elif (len(actions_queue[index]) == 0):
 				actions[index] = 4
 				if all(kings_move_count >= n_moves for kings_move_count in kings_move_count) and all(env.move_available(k) for k in env.kings):
+
 					toquit = True
+
+			
 		
 		
 		env.step(actions)
 		for index, genome in enumerate(genomes):
-			if genome[1].fitness < (360-env.kings[index].maxy):
-				genome[1].fitness = (360-env.kings[index].maxy)
+
+			#if add_to_visited(env.kings[index], get_current_platform(env,env.kings[index])):
+				#genome.fitness += 1
+			if genome[1].fitness < env.kings[index].reward:
+				genome[1].fitness = env.kings[index].reward
 
 		if toquit:
 			break
+
+
 
 
 def run(config_file):

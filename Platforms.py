@@ -833,7 +833,13 @@ class Platform():
 		if snow:
 
 			self.type = "Snow"
+		 
 
+
+	
+
+		
+		
 	@property
 	def rect(self):
 		return pygame.Rect(self.x, self.y, self.width, self.height)
@@ -848,7 +854,8 @@ class Platforms():
 	def platforms(self, level):
 
 		try:
-
+            
+			
 			return [Platform(*rectangle) for rectangle in self.rectangles.levels[level]]
 
 		except:
