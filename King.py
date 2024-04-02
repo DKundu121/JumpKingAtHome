@@ -65,6 +65,7 @@ class King():
 	def __init__(self, screen, levels):
 
 		# Static 
+		self.stayed = False
 
 		self.screen = screen
 		
