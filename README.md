@@ -1,3 +1,21 @@
+## Jump King with NeuroEvolution of Augmenting Topologies!
+
+This repository is a **fork** of the original project, modified for a University group project. Several significant changes have been made, including:
+
+- **Multiple Kings**: Enabled multiple kings to exist concurrently, interacting within the same environment.
+- **Multi-Level King Support**: Added support for kings across several levels concurrently for parallelised training.
+- **King Awareness Hooks**: Incorporated hooks into the code, providing input data to neural networks, giving a view of each king's surroundings.
+- **NEAT-Python Integration**: Integrated NEAT-Python to evolve generations of neural networks, where each network controls a king, allowing for improvements in king behavior through evolution over time.
+- **Asynchronous Game Logic**: Modified the game to run asynchronously of individual kings' action by implementing a per-king action queue, maintaining a fixed game speed.
+- **Parallel Training Optimisation**: Significantly optimised the game code by drastically reducing need to call updater functions and implementing active GC collection to resolve memory errors, enabling the training of hundreds of kings in parallel.
+
+These modifications extend the functionality and depth of the original project, with a focus on enhancing king AI using neural evolution techniques and improving performance for large-scale simulations.
+
+(Apologies for the commit messages, this was a fun yet challenging project!)
+
+**Original Description Below**
+
+
 # Jump King
  Jump King With Pygame.
  Run JumpKing.exe to play
