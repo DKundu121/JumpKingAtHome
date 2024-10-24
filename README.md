@@ -1,4 +1,4 @@
-## Jump King with NeuroEvolution of Augmenting Topologies!
+# Jump King with NeuroEvolution of Augmenting Topologies!
 
 This repository is a **fork** of the original project, modified for a University group project. Several significant changes have been made, including:
 
@@ -9,7 +9,7 @@ This repository is a **fork** of the original project, modified for a University
 - **Asynchronous Game Logic**: Modified the game to run asynchronously of individual kings' action by implementing a per-king action queue, maintaining a fixed game speed.
 - **Parallel Training Optimisation**: Significantly optimised the game code by drastically reducing need to call updater functions and implementing active GC collection to resolve memory errors, enabling the training of hundreds of kings in parallel.
 
-These modifications extend the functionality and depth of the original project, with a focus on enhancing king AI using neural evolution techniques and improving performance for large-scale simulations.
+![image](https://github.com/user-attachments/assets/77ee0345-f1cb-489a-81bf-ea0c042a5bac)
 
 (Apologies for the commit messages, this was a fun yet challenging project!)
 
